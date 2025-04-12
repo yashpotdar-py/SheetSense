@@ -23,7 +23,7 @@ function onOpen() {
 function showSidebar() {
   const html = HtmlService.createHtmlOutputFromFile('chat')
     .setTitle('SheetSense Chat')
-    .setWidth(300);
+    .setWidth(450);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
