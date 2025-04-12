@@ -431,7 +431,15 @@
         settingsNeeded.innerHTML = `
           <h2>Setup Required</h2>
           <p>Please configure your Gemini API key to use SheetSense.</p>
-          <p>You can get a free API key from Google AI Studio.</p>
+          <p>You can get a free API key from <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</p>
+          <p style="color: #ea4335; font-size: 14px; margin-top: 16px;">
+            <strong>API Key Setup Instructions:</strong><br>
+            1. Visit <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a><br>
+            2. Sign in with your Google account<br>
+            3. Create a new API key (or use an existing one)<br>
+            4. Copy the API key<br>
+            5. Click the button below and paste it in the settings
+          </p>
           <button class="settings-button" id="setup-button">Open Settings</button>
         `;
         

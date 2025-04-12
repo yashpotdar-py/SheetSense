@@ -88,8 +88,18 @@ function getSpreadsheetData() {
   const data = sheet.getDataRange().getValues();
   const sheetName = sheet.getName();
   
+  // Check if spreadsheet has data
+  if (!data || data.length === 0) {
+    throw new Error("No data found in this sheet. Please add data to your spreadsheet.");
+  }
+  
   // Get column headers (assuming first row contains headers)
   const headers = data[0];
+  
+  // Check if headers exist
+  if (!headers || headers.length === 0 || headers.every(header => header === "")) {
+    throw new Error("No headers found in the first row. Please add column headers to your spreadsheet.");
+  }
   
   // Get actual data (excluding headers)
   const rows = data.slice(1);

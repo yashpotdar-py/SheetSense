@@ -1,4 +1,4 @@
-/**
+/*
  * SheetSense - AI Agent
  * 
  * This file contains functions for interacting with the Gemini AI model.
@@ -21,7 +21,7 @@ function callGeminiAPI(query, context, history = []) {
     if (!apiKey) {
       return {
         success: false,
-        text: "Please set up your Gemini API key in the settings.",
+        text: "Please set up your Gemini API key in the settings. Get one from Google AI Studio at https://makersuite.google.com/app/apikey",
         error: "API key not found"
       };
     }
@@ -60,11 +60,11 @@ function callGeminiAPI(query, context, history = []) {
     `;
     
     // Make API request to Gemini
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    
     const payload = {
       contents: [
         {
-          role: "user",
           parts: [{ text: prompt }]
         }
       ],
@@ -79,41 +79,108 @@ function callGeminiAPI(query, context, history = []) {
     const options = {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
+        "Content-Type": "application/json"
       },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
     
+    console.log("Sending request to Gemini API...");
     const response = UrlFetchApp.fetch(url, options);
     const responseCode = response.getResponseCode();
     const responseText = response.getContentText();
+    console.log("Response code: " + responseCode);
     
     if (responseCode === 200) {
-      const parsedResponse = JSON.parse(responseText);
-      
-      // Extract the text from Gemini's response
-      const responseText = parsedResponse.candidates[0].content.parts[0].text;
-      
-      return {
-        success: true,
-        text: responseText
-      };
+      try {
+        const parsedResponse = JSON.parse(responseText);
+        console.log("Response parsed successfully");
+        
+        // Check if we have candidates in the response
+        if (!parsedResponse.candidates || parsedResponse.candidates.length === 0) {
+          console.error("No candidates in response: " + JSON.stringify(parsedResponse));
+          return {
+            success: false,
+            text: "The AI model didn't generate a response. Please try again with a different question.",
+            error: "No candidates in response"
+          };
+        }
+        
+        // Extract the text from Gemini's response
+        const candidate = parsedResponse.candidates[0];
+        if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+          console.error("No content in response candidate: " + JSON.stringify(candidate));
+          return {
+            success: false,
+            text: "The AI model response was empty. Please try again.",
+            error: "No content in response"
+          };
+        }
+        
+        const aiResponseText = candidate.content.parts[0].text;
+        
+        return {
+          success: true,
+          text: aiResponseText
+        };
+      } catch (parseError) {
+        console.error("Error parsing response: " + parseError.toString());
+        console.error("Response text: " + responseText);
+        return {
+          success: false,
+          text: "Error parsing the AI response. Please check your API key or try again later.",
+          error: parseError.toString()
+        };
+      }
     } else {
       console.error("API Error: " + responseText);
-      return {
-        success: false,
-        text: "Sorry, I encountered an error when trying to process your request.",
-        error: responseText
-      };
+      
+      // Attempt to parse error for more helpful message
+      try {
+        const errorJson = JSON.parse(responseText);
+        const errorMessage = errorJson.error?.message || "Unknown API error";
+        const errorStatus = errorJson.error?.status || "UNKNOWN";
+        
+        // Handle specific error types
+        if (errorStatus.includes("INVALID_ARGUMENT")) {
+          return {
+            success: false,
+            text: "Your API key may be invalid or there's an issue with the request. Please check your settings.",
+            error: errorMessage
+          };
+        } else if (errorStatus.includes("PERMISSION_DENIED")) {
+          return {
+            success: false,
+            text: "Your API key doesn't have permission to use this model. Please check your Google AI Studio account.",
+            error: errorMessage
+          };
+        } else if (errorStatus.includes("RESOURCE_EXHAUSTED")) {
+          return {
+            success: false,
+            text: "You've reached your API usage limit. Please try again later or check your quota in Google AI Studio.",
+            error: errorMessage
+          };
+        } else {
+          return {
+            success: false,
+            text: "Sorry, I encountered an error: " + errorMessage,
+            error: errorMessage
+          };
+        }
+      } catch (e) {
+        return {
+          success: false,
+          text: "Sorry, there was an error contacting the AI service. Please try again later.",
+          error: responseText
+        };
+      }
     }
     
   } catch (error) {
     console.error("Error in callGeminiAPI: " + error.toString());
     return {
       success: false,
-      text: "Sorry, something went wrong. Please try again later.",
+      text: "Sorry, something went wrong when connecting to the AI service. Please try again later.",
       error: error.toString()
     };
   }
@@ -167,21 +234,30 @@ function processUserMessage(message, history = []) {
     }
     
     // Get spreadsheet data for context
-    const sheetData = getSpreadsheetData();
-    
-    // Call Gemini API with message and context
-    const context = {
-      sheetData: sheetData,
-      currentTime: new Date().toString()
-    };
-    
-    return callGeminiAPI(message, context, history);
+    try {
+      const sheetData = getSpreadsheetData();
+      
+      // Call Gemini API with message and context
+      const context = {
+        sheetData: sheetData,
+        currentTime: new Date().toString()
+      };
+      
+      return callGeminiAPI(message, context, history);
+    } catch (dataError) {
+      console.error("Error getting spreadsheet data: " + dataError.toString());
+      return {
+        success: false,
+        text: "I couldn't access your spreadsheet data. Please make sure your sheet contains data with headers in the first row.",
+        error: dataError.toString()
+      };
+    }
     
   } catch (error) {
     console.error("Error in processUserMessage: " + error.toString());
     return {
       success: false,
-      text: "Sorry, I encountered an error processing your message.",
+      text: "Sorry, I encountered an error processing your message. Please try again.",
       error: error.toString()
     };
   }
