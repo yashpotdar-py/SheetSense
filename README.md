@@ -60,5 +60,7 @@ SheetSense integrates directly into Google Sheets as a sidebar chat interface, a
 
 ## License 📄
 This project is licensed under the MIT License.
+
 Developed by: Team TechParser
--Your AI wizard for Google Sheets!
+
+Your AI wizard for Google Sheets!
