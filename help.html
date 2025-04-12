@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SheetSense Help</title>
+    
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 24px;
+        color: #333;
+        background-color: #f5f5f5;
+      }
+      
+      .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+        margin: 0 0 0 8px;
+        color: #4285f4;
+      }
+      
+      .section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      
+      .section h2 {
+        margin-top: 0;
+        font-size: 18px;
+        color: #4285f4;
+        display: flex;
+        align-items: center;
+      }
+      
+      .section h2 .material-icons {
+        margin-right: 8px;
+        font-size: 20px;
+      }
+      
+      .section p {
+        margin-bottom: 16px;
+      }
+      
+      .button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-block;
+        margin-top: 8px;
+      }
+      
+      .button:hover {
+        background-color: #3367d6;
+      }
+      
+      ul {
+        padding-left: 20px;
+      }
+      
+      li {
+        margin-bottom: 8px;
+      }
+      
+      .example {
+        background-color: #f5f5f5;
+        padding: 8px 12px;
+        border-left: 3px solid #4285f4;
+        margin: 16px 0;
+      }
+      
+      .close-button {
+        background-color: transparent;
+        color: #4285f4;
+        border: 1px solid #4285f4;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        display: block;
+        margin: 16px auto 8px;
+      }
+      
+      .close-button:hover {
+        background-color: rgba(66, 133, 244, 0.1);
+      }
+      
+      .keyboard-shortcut {
+        background-color: #f1f3f4;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <span class="material-icons">help</span>
+      <h1>SheetSense Help</h1>
+    </div>
+    
+    <div class="section">
+      <h2><span class="material-icons">chat</span> Getting Started</h2>
+      <p>SheetSense is an AI assistant that helps you analyze and understand your spreadsheet data. Here's how to get started:</p>
+      
+      <ol>
+        <li>Click on the "SheetSense" menu in your Google Sheet</li>
+        <li>Select "Open Chat" to launch the sidebar</li>
+        <li>Enter your query in the chat box and press Enter or click the send button</li>
+        <li>SheetSense will analyze your data and respond to your questions</li>
+      </ol>
+    </div>
+    
+    <div class="section">
+      <h2><span class="material-icons">psychology</span> What You Can Ask</h2>
+      <p>You can ask SheetSense various questions about your spreadsheet data, including:</p>
+      
+      <ul>
+        <li><strong>Data Analysis:</strong> "Summarize this data" or "Find trends in column B"</li>
+        <li><strong>Visualization Suggestions:</strong> "What's the best chart to visualize this data?"</li>
+        <li><strong>Formula Help:</strong> "How do I calculate the average of values in column C that meet certain criteria?"</li>
+        <li><strong>Data Cleaning:</strong> "Help me clean up this data"</li>
+      </ul>
+      
+      <div class="example">
+        <strong>Example:</strong> "What's the correlation between sales and marketing spend in this data?"
+      </div>
+      
+      <div class="example">
+        <strong>Example:</strong> "Create a formula to calculate the monthly growth rate based on columns B and C"
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2><span class="material-icons">tips_and_updates</span> Tips and Tricks</h2>
+      <ul>
+        <li>Be specific in your questions to get the most accurate responses</li>
+        <li>Use suggested questions to explore capabilities</li>
+        <li>You can press <span class="keyboard-shortcut">Enter</span> to send a message, or <span class="keyboard-shortcut">Shift+Enter</span> for a new line</li>
+        <li>Custom instructions in Settings can help the AI understand your specific needs</li>
+        <li>Use <span class="keyboard-shortcut">/clear</span> in the chat to clear the conversation history</li>
+      </ul>
+    </div>
+    
+    <div class="section">
+      <h2><span class="material-icons">settings</span> Configuring SheetSense</h2>
+      <p>To configure SheetSense, select "Settings" from the SheetSense menu. You can:</p>
+      
+      <ul>
+        <li><strong>API Key:</strong> Set or update your Gemini API key</li>
+        <li><strong>Custom Instructions:</strong> Add specific instructions for the AI assistant</li>
+        <li><strong>Chat History:</strong> Choose whether to save chat history between sessions</li>
+      </ul>
+      
+      <button id="open-settings" class="button">Open Settings</button>
+    </div>
+    
+    <button id="close-button" class="close-button">Close Help</button>
+    
+    <script>
+      // Initialize when the page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners for buttons
+        document.getElementById('close-button').addEventListener('click', closeDialog);
+        document.getElementById('open-settings').addEventListener('click', openSettings);
+      });
+      
+      // Close the dialog
+      function closeDialog() {
+        google.script.host.close();
+      }
+      
+      // Open settings dialog
+      function openSettings() {
+        google.script.run.showSettings();
+        closeDialog();
+      }
+    </script>
+  </body>
+</html> 

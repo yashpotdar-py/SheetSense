@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SheetSense Settings</title>
+    
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 16px;
+        color: #333;
+        background-color: #f5f5f5;
+      }
+      
+      .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+        margin: 0 0 0 8px;
+        color: #4285f4;
+      }
+      
+      .form-group {
+        margin-bottom: 16px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      
+      input[type="text"], textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      
+      input:focus, textarea:focus {
+        border-color: #4285f4;
+        outline: none;
+      }
+      
+      textarea {
+        height: 80px;
+        resize: vertical;
+      }
+      
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+      }
+      
+      .checkbox-group label {
+        margin-bottom: 0;
+        margin-left: 8px;
+        font-weight: normal;
+      }
+      
+      .api-key-info {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #757575;
+      }
+      
+      .button-group {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 24px;
+        gap: 8px;
+      }
+      
+      .button {
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+        border: none;
+      }
+      
+      .primary-button {
+        background-color: #4285f4;
+        color: white;
+      }
+      
+      .primary-button:hover {
+        background-color: #3367d6;
+      }
+      
+      .secondary-button {
+        background-color: transparent;
+        color: #4285f4;
+        border: 1px solid #4285f4;
+      }
+      
+      .secondary-button:hover {
+        background-color: rgba(66, 133, 244, 0.1);
+      }
+      
+      .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+      
+      .alert-info {
+        background-color: #e8f0fe;
+        border-left: 4px solid #4285f4;
+        color: #174ea6;
+      }
+      
+      .alert-success {
+        background-color: #e6f4ea;
+        border-left: 4px solid #34a853;
+        color: #137333;
+      }
+      
+      .alert-error {
+        background-color: #fce8e6;
+        border-left: 4px solid #ea4335;
+        color: #c5221f;
+      }
+      
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <span class="material-icons">settings</span>
+      <h1>SheetSense Settings</h1>
+    </div>
+    
+    <div id="notification" class="alert hidden"></div>
+    
+    <div class="form-group">
+      <label for="gemini-api-key">Gemini API Key</label>
+      <input type="text" id="gemini-api-key" placeholder="Enter your Gemini API key">
+      <div class="api-key-info">
+        <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener">Get a free Gemini API key</a> from Google AI Studio.
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="custom-instructions">Custom Instructions</label>
+      <textarea id="custom-instructions" placeholder="Add specific instructions for the AI assistant..."></textarea>
+      <div class="api-key-info">
+        Custom instructions help the AI better understand your needs and preferences.
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="save-history" name="save-history">
+        <label for="save-history">Save chat history between sessions</label>
+      </div>
+    </div>
+    
+    <div class="alert alert-info">
+      <strong>Note:</strong> All settings are stored in your user properties and are only accessible to you.
+    </div>
+    
+    <div class="button-group">
+      <button id="cancel-button" class="button secondary-button">Cancel</button>
+      <button id="save-button" class="button primary-button">Save</button>
+    </div>
+    
+    <script>
+      // Initialize the form when the page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+        
+        // Add event listeners for buttons
+        document.getElementById('save-button').addEventListener('click', saveSettings);
+        document.getElementById('cancel-button').addEventListener('click', closeDialog);
+      });
+      
+      // Load settings from Apps Script
+      function loadSettings() {
+        google.script.run
+          .withSuccessHandler(function(settings) {
+            document.getElementById('gemini-api-key').value = settings.geminiApiKey || '';
+            document.getElementById('custom-instructions').value = settings.customInstructions || '';
+            document.getElementById('save-history').checked = settings.saveHistory === true;
+          })
+          .withFailureHandler(function(error) {
+            showNotification('Error loading settings: ' + error, 'error');
+          })
+          .getSettings();
+      }
+      
+      // Save settings to Apps Script
+      function saveSettings() {
+        const settings = {
+          geminiApiKey: document.getElementById('gemini-api-key').value.trim(),
+          customInstructions: document.getElementById('custom-instructions').value.trim(),
+          saveHistory: document.getElementById('save-history').checked
+        };
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showNotification('Settings saved successfully!', 'success');
+              setTimeout(closeDialog, 1500);
+            } else {
+              showNotification('Error saving settings', 'error');
+            }
+          })
+          .withFailureHandler(function(error) {
+            showNotification('Error: ' + error, 'error');
+          })
+          .saveSettings(settings);
+      }
+      
+      // Show notification message
+      function showNotification(message, type) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = 'alert alert-' + type;
+        notification.classList.remove('hidden');
+        
+        // Hide after 5 seconds
+        setTimeout(function() {
+          notification.classList.add('hidden');
+        }, 5000);
+      }
+      
+      // Close the dialog
+      function closeDialog() {
+        google.script.host.close();
+      }
+    </script>
+  </body>
+</html> 
