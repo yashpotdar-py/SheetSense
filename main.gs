@@ -159,3 +159,78 @@ function createChart(chartParams) {
     return { success: false, message: 'Error creating chart: ' + error.toString() };
   }
 }
+
+/**
+ * Executes a formula or command in the active sheet.
+ * @param {string} command - The formula or command to execute
+ * @param {string} cellReference - Optional cell reference where to insert the formula
+ * @return {object} The result of the operation
+ */
+function executeCommand(command, cellReference) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSheet();
+    
+    // Check if this is a formula to insert
+    if (command.startsWith('=')) {
+      if (!cellReference) {
+        // If no cell reference is provided, use the currently selected cell
+        const activeRange = sheet.getActiveRange();
+        if (!activeRange) {
+          return {
+            success: false,
+            message: "No cell selected. Please select a cell where to insert the formula."
+          };
+        }
+        cellReference = activeRange.getA1Notation();
+      }
+      
+      // Insert the formula
+      const cell = sheet.getRange(cellReference);
+      cell.setFormula(command);
+      
+      return {
+        success: true,
+        message: `Formula "${command}" inserted in cell ${cellReference}.`
+      };
+    }
+    
+    // Handle specific commands
+    if (command.toLowerCase().startsWith('/create chart')) {
+      // Basic chart creation
+      const activeRange = sheet.getActiveRange();
+      if (!activeRange) {
+        return {
+          success: false,
+          message: "No data selected. Please select data range for the chart."
+        };
+      }
+      
+      const chart = sheet.newChart()
+        .setChartType(Charts.ChartType.LINE)
+        .addRange(activeRange)
+        .setPosition(5, 5, 0, 0)
+        .setOption('title', 'Chart from SheetSense')
+        .build();
+      
+      sheet.insertChart(chart);
+      
+      return {
+        success: true,
+        message: "Chart created successfully."
+      };
+    }
+    
+    // Add more command types as needed
+    
+    return {
+      success: false,
+      message: "Command not recognized. Please use '=' for formulas or a supported command."
+    };
+  } catch (error) {
+    console.error("Error executing command: " + error.toString());
+    return {
+      success: false,
+      message: "Error executing command: " + error.toString()
+    };
+  }
+}

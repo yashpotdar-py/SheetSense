@@ -269,6 +269,101 @@
         text-decoration: underline;
       }
       
+      /* Code action buttons */
+      .code-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 6px;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+      }
+      
+      .code-actions:hover {
+        opacity: 1;
+      }
+      
+      .code-action-btn {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: background-color 0.2s;
+      }
+      
+      .code-action-btn:hover {
+        background-color: #d2e3fc;
+      }
+      
+      .code-action-btn .material-icons {
+        font-size: 16px;
+      }
+      
+      .formula-detected {
+        position: relative;
+        border-left: 3px solid #1a73e8;
+      }
+      
+      /* Toast notifications */
+      #toast-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .toast {
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+        transition: opacity 0.3s, transform 0.3s;
+        max-width: 300px;
+        text-align: center;
+      }
+      
+      /* Tooltip for buttons */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+      
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+        pointer-events: none;
+      }
+      
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+      
       .message-time {
         font-size: 11px;
         color: #5f6368;
@@ -933,11 +1028,60 @@
           .replace(/^## (.*$)/gm, '<h2>$1</h2>')
           .replace(/^# (.*$)/gm, '<h1>$1</h1>');
         
-        // Replace code blocks with proper syntax highlighting
-        formattedContent = formattedContent.replace(/```(.*?)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+        // Replace code blocks with proper syntax highlighting and action buttons
+        formattedContent = formattedContent.replace(/```(.*?)\n([\s\S]*?)```/g, function(match, language, code) {
+          // Check if the code is a formula
+          const isFormula = code.trim().startsWith('=');
+          const formulaClass = isFormula ? 'formula-detected' : '';
+          
+          // Create action buttons based on content type
+          let actionButtons = `
+            <div class="code-actions">
+              <button class="code-action-btn copy-btn tooltip" onclick="copyToClipboard(this.parentElement.previousElementSibling.textContent)">
+                <span class="material-icons">content_copy</span> Copy
+                <span class="tooltiptext">Copy to clipboard</span>
+              </button>`;
+          
+          if (isFormula) {
+            actionButtons += `
+              <button class="code-action-btn execute-btn tooltip" onclick="insertFormula(this.parentElement.previousElementSibling.textContent)">
+                <span class="material-icons">add_circle</span> Insert
+                <span class="tooltiptext">Insert into selected cell</span>
+              </button>
+              <button class="code-action-btn execute-btn tooltip" onclick="executeFormula(this.parentElement.previousElementSibling.textContent)">
+                <span class="material-icons">play_arrow</span> Execute
+                <span class="tooltiptext">Execute formula with cell selection</span>
+              </button>`;
+          } else if (language.trim().toLowerCase() === 'sheets' || language.trim().toLowerCase() === 'sheet') {
+            actionButtons += `
+              <button class="code-action-btn execute-btn tooltip" onclick="executeSheetCommand(this.parentElement.previousElementSibling.textContent)">
+                <span class="material-icons">play_arrow</span> Execute
+                <span class="tooltiptext">Run this command in current sheet</span>
+              </button>`;
+          }
+          
+          actionButtons += `</div>`;
+          
+          return `<pre class="${formulaClass}"><code>${code}</code></pre>${actionButtons}`;
+        });
         
-        // Replace inline code
-        formattedContent = formattedContent.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Check for inline formulas and add special formatting + actions
+        formattedContent = formattedContent.replace(/`([^`]+)`/g, function(match, code) {
+          if (code.trim().startsWith('=')) {
+            return `<code class="formula-detected">${code}</code>
+              <span class="code-actions" style="display: inline-flex; margin-left: 8px;">
+                <button class="code-action-btn copy-btn tooltip" onclick="copyToClipboard('${code.replace(/'/g, "\\'")}')">
+                  <span class="material-icons">content_copy</span>
+                  <span class="tooltiptext">Copy to clipboard</span>
+                </button>
+                <button class="code-action-btn execute-btn tooltip" onclick="insertFormula('${code.replace(/'/g, "\\'")}')">
+                  <span class="material-icons">add_circle</span>
+                  <span class="tooltiptext">Insert into selected cell</span>
+                </button>
+              </span>`;
+          }
+          return `<code>${code}</code>`;
+        });
         
         // Bold text
         formattedContent = formattedContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -1101,6 +1245,145 @@
       function adjustTextareaHeight(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+      }
+      
+      // Copy text to clipboard
+      function copyToClipboard(text) {
+        // Clean up any whitespace
+        const cleanText = text.trim();
+        
+        // Create a temporary textarea element
+        const textarea = document.createElement('textarea');
+        textarea.value = cleanText;
+        textarea.style.position = 'fixed'; // Prevent scrolling to bottom
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+          // Execute the copy command
+          const successful = document.execCommand('copy');
+          
+          // Show a brief success message
+          if (successful) {
+            showToast('Copied to clipboard!');
+          } else {
+            showToast('Failed to copy');
+          }
+        } catch (err) {
+          console.error('Error copying to clipboard:', err);
+          showToast('Failed to copy: ' + err);
+        }
+        
+        // Clean up the textarea
+        document.body.removeChild(textarea);
+      }
+      
+      // Insert formula into active cell
+      function insertFormula(formula) {
+        const cleanFormula = formula.trim();
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showToast(result.message);
+            } else {
+              showToast('Error: ' + result.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showToast('Error: ' + error.toString());
+          })
+          .executeCommand(cleanFormula);
+      }
+      
+      // Execute formula or command directly
+      function executeFormula(formula) {
+        const cellRef = prompt('Enter cell reference (e.g., A1) or leave empty to use selected cell:', '');
+        insertFormulaWithCell(formula, cellRef);
+      }
+      
+      // Insert formula with specified cell reference
+      function insertFormulaWithCell(formula, cellRef) {
+        const cleanFormula = formula.trim();
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showToast(result.message);
+            } else {
+              showToast('Error: ' + result.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showToast('Error: ' + error.toString());
+          })
+          .executeCommand(cleanFormula, cellRef);
+      }
+      
+      // Execute a sheets command
+      function executeSheetCommand(command) {
+        const cleanCommand = command.trim();
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result.success) {
+              showToast(result.message);
+              addMessageToChat('assistant', 'Command executed: ' + result.message);
+            } else {
+              showToast('Error: ' + result.message);
+              addMessageToChat('assistant', 'Error executing command: ' + result.message);
+            }
+          })
+          .withFailureHandler(function(error) {
+            showToast('Error: ' + error.toString());
+            addMessageToChat('assistant', 'Error: ' + error.toString());
+          })
+          .executeCommand(cleanCommand);
+      }
+      
+      // Show a temporary toast message
+      function showToast(message) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+          toastContainer = document.createElement('div');
+          toastContainer.id = 'toast-container';
+          document.body.appendChild(toastContainer);
+        }
+        
+        // Create the toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+        
+        // Add to container
+        toastContainer.appendChild(toast);
+        
+        // Trigger animation
+        setTimeout(() => {
+          toast.style.opacity = '1';
+          toast.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(20px)';
+          
+          // Remove from DOM after animation completes
+          setTimeout(() => {
+            if (toastContainer.contains(toast)) {
+              toastContainer.removeChild(toast);
+            }
+            
+            // Remove container if empty
+            if (toastContainer.children.length === 0) {
+              document.body.removeChild(toastContainer);
+            }
+          }, 300);
+        }, 3000);
       }
     </script>
   </body>
